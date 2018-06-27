@@ -1,10 +1,12 @@
 package poissonSimulator;
 
 import ij.ImageJ;
+import ij.ImagePlus;
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgOpener;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.stats.Normalize;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -42,13 +44,18 @@ public class InputOutputImageStack {
 		
 		new ImageJ();
 		
-		int SNR = 5;
-		RandomAccessibleInterval<FloatType> source = new ImgOpener().openImgs("/Users/aimachine/Documents/HighSNR/100x_bin2_05_1_w1CSU-TRIPLE-488_s5.TIF", new FloatType()).iterator().next();
-		ImageJFunctions.show(source);
+		int SNR = 30;
+		RandomAccessibleInterval<FloatType> source = new ImgOpener().openImgs("/Users/aimachine/Documents/HighSNR/100x_bin2_05_1_w1CSU-TRIPLE-488_s7.TIF", new FloatType()).iterator().next();
+		
+		FloatType minval = new FloatType(0);
+		FloatType maxval = new FloatType(1);
+		Normalize.normalize(Views.iterable(source), minval, maxval);
+		
+		ImagePlus imp = ImageJFunctions.show(source);
 		
 		RandomAccessibleInterval<FloatType> noisy = GenerateNoisyImage(source, SNR);
-		
-		ImageJFunctions.show(noisy);
+		Normalize.normalize(Views.iterable(noisy), minval, maxval);
+		ImageJFunctions.show(noisy).setTitle(imp.getTitle());
 	}
 	
 }
