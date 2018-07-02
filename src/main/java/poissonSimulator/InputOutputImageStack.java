@@ -1,7 +1,9 @@
 package poissonSimulator;
 
+import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
+import ij.io.FileSaver;
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgOpener;
 import net.imglib2.IterableInterval;
@@ -24,7 +26,7 @@ public class InputOutputImageStack {
 		final ImgFactory< FloatType > factory = Util.getArrayOrCellImgFactory( inputimg, new FloatType() );
 		RandomAccessibleInterval<FloatType> noisylines = factory.create(inputimg, new FloatType());
 		
-		addBackground(Views.iterable(inputimg), 0.2);
+		addBackground(Views.iterable(inputimg), 0.02);
 		
 		noisylines = Poissonprocess.poissonProcess(inputimg, SNR);
 		
@@ -44,18 +46,41 @@ public class InputOutputImageStack {
 		
 		new ImageJ();
 		
-		int SNR = 30;
-		RandomAccessibleInterval<FloatType> source = new ImgOpener().openImgs("/Users/aimachine/Documents/HighSNR/100x_bin2_05_1_w1CSU-TRIPLE-488_s7.TIF", new FloatType()).iterator().next();
+		int SNR = 10;
+		
+		String folder = "/Users/aimachine/Documents/PairTrainingData/Low/";
+		
+		String basefolder = "/Users/aimachine/Documents/PairTrainingData/";
+		
+		RandomAccessibleInterval<FloatType> source = new ImgOpener().openImgs("/Users/aimachine/Documents/PairTrainingData/FileA_s1_t14.tif", new FloatType()).iterator().next();
+		
+		ImagePlus imp = ImageJFunctions.show(source);
+		
+
+		FileSaver fsB = new FileSaver(imp);
+	
+		fsB.saveAsTiff(basefolder + imp.getTitle());
+		
 		
 		FloatType minval = new FloatType(0);
 		FloatType maxval = new FloatType(1);
 		Normalize.normalize(Views.iterable(source), minval, maxval);
 		
-		ImagePlus imp = ImageJFunctions.show(source);
+		
 		
 		RandomAccessibleInterval<FloatType> noisy = GenerateNoisyImage(source, SNR);
-		Normalize.normalize(Views.iterable(noisy), minval, maxval);
-		ImageJFunctions.show(noisy).setTitle(imp.getTitle());
+	
+		
+		
+		
+		
+		ImagePlus impA = ImageJFunctions.show(noisy);
+		
+		FileSaver fs = new FileSaver(impA);
+	
+		fs.saveAsTiff(folder + imp.getTitle());
+		
+		
 	}
 	
 }
