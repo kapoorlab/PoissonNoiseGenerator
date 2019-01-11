@@ -1,5 +1,11 @@
 package poissonSimulator;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.InputStream;
+
+import javax.swing.JFileChooser;
+
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
@@ -21,12 +27,25 @@ import net.imglib2.view.Views;
 public class InputOutputImageStack {
 
 	
+	public static void SaveNoisyImages(RandomAccessibleInterval<FloatType> noisy, File savedirectory, String savename ) {
+		
+		
+		ImagePlus imp = ImageJFunctions.wrap(noisy, "Image");
+		
+		FileSaver fsimp = new FileSaver(imp);
+		
+		fsimp.saveAsTiff(savedirectory + "/" + savename + ".tif");
+		
+	}
+	
 	public static RandomAccessibleInterval<FloatType> GenerateNoisyImage(final RandomAccessibleInterval<FloatType> inputimg, final int SNR) {
 		
 		final ImgFactory< FloatType > factory = Util.getArrayOrCellImgFactory( inputimg, new FloatType() );
 		RandomAccessibleInterval<FloatType> noisylines = factory.create(inputimg, new FloatType());
 		
-		addBackground(Views.iterable(inputimg), 0.02);
+		
+		subtractBackground(Views.iterable(inputimg), -0.2);
+		addBackground(Views.iterable(inputimg), 0.2);
 		
 		noisylines = Poissonprocess.poissonProcess(inputimg, SNR);
 		
@@ -41,44 +60,50 @@ public class InputOutputImageStack {
 			t.setReal(t.getRealDouble() + value);
 	}
 	
-	
+	public static< T extends RealType< T > & NativeType< T >>  void subtractBackground(final IterableInterval<T> iterable, final double value) {
+		for (final T t : iterable)
+			t.setReal(t.getRealDouble() - value);
+	}
 	public static void main(String args[]) throws ImgIOException {
 		
-		new ImageJ();
 		
-		int SNR = 10;
+	
+		int SNR = 5;
 		
-		String folder = "/Users/aimachine/Documents/PairTrainingData/Low/";
 		
-		String basefolder = "/Users/aimachine/Documents/PairTrainingData/";
+		File SourceImages = new File("/Users/aimachine/Documents/Apoptosis_Data/From_Victoire/Training_Set_DelAndDiv/InterestingMovies/DividingMovies/");
 		
-		RandomAccessibleInterval<FloatType> source = new ImgOpener().openImgs("/Users/aimachine/Documents/PairTrainingData/FileA_s1_t14.tif", new FloatType()).iterator().next();
 		
-		ImagePlus imp = ImageJFunctions.show(source);
+		ImgOpener imgOpener = new ImgOpener();
 		
+		JFileChooser chooserImages = new JFileChooser();
+		
+		chooserImages.setCurrentDirectory(SourceImages);
+		
+		System.out.println("Files: " +  chooserImages.getCurrentDirectory().listFiles().length);
+		
+		File[] Images = chooserImages.getCurrentDirectory().listFiles();
+		
+		for (int i = 0; i < Images.length; ++i) {
+			
+			
+			System.out.println("Noising File Number" + i);
+			
+			
+			File Image = Images[i];
+			
+			String imagename = Image.getName().replaceFirst("[.][^.]+$", "");
+			String savename =  "SNR" + Integer.toString(SNR) + imagename;
+			
+			RandomAccessibleInterval<FloatType> source = imgOpener.openImgs(Image.getAbsolutePath(), new FloatType())
+					.get(0);
 
-		FileSaver fsB = new FileSaver(imp);
-	
-		fsB.saveAsTiff(basefolder + imp.getTitle());
+			RandomAccessibleInterval<FloatType> noisy = GenerateNoisyImage(source, SNR);
+			
+			SaveNoisyImages(noisy, SourceImages, savename);
+		}
 		
-		
-		FloatType minval = new FloatType(0);
-		FloatType maxval = new FloatType(1);
-		Normalize.normalize(Views.iterable(source), minval, maxval);
-		
-		
-		
-		RandomAccessibleInterval<FloatType> noisy = GenerateNoisyImage(source, SNR);
-	
-		
-		
-		
-		
-		ImagePlus impA = ImageJFunctions.show(noisy);
-		
-		FileSaver fs = new FileSaver(impA);
-	
-		fs.saveAsTiff(folder + imp.getTitle());
+		System.out.println("Done saving files");
 		
 		
 	}
